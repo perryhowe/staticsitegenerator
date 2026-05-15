@@ -1,5 +1,5 @@
 import unittest
-from inline_markdown import split_nodes_delimiter
+from inline_markdown import split_nodes_delimiter, extract_markdown_images, extract_markdown_links
 from textnode import TextNode, TextType
 
 class TestInlineMarkdown(unittest.TestCase):
@@ -60,3 +60,38 @@ class TestInlineMarkdown(unittest.TestCase):
         node = TextNode("This has an **unmatched bold", TextType.TEXT)
         with self.assertRaises(Exception):
             split_nodes_delimiter([node], "**", TextType.BOLD)
+
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_markdown_images_none(self):
+        matches = extract_markdown_images("This text has no images at all")
+        self.assertListEqual([], matches)
+
+    def test_extract_markdown_links_ignores_images(self):
+        matches = extract_markdown_links(
+            "![an image](https://example.com/img.png) and [a link](https://example.com)"
+        )
+        self.assertListEqual([("a link", "https://example.com")], matches)
+
+    def test_extract_markdown_images_multiple(self):
+        matches = extract_markdown_images(
+            "![cat](https://example.com/cat.png) and ![dog](https://example.com/dog.png)"
+        )
+        self.assertListEqual(
+            [
+                ("cat", "https://example.com/cat.png"),
+                ("dog", "https://example.com/dog.png"),
+            ],
+            matches,
+        )
+
+    def test_extract_markdown_images_empty_alt(self):
+        matches = extract_markdown_images("![](https://example.com/img.png)")
+        self.assertListEqual([("", "https://example.com/img.png")], matches)
+
+if __name__ == "__main__":
+    unittest.main()
